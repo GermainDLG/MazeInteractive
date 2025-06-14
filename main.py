@@ -6,6 +6,16 @@ from pygame_widgets.dropdown import Dropdown
 # pygame setup
 pygame.init()
 
+def setGrid():
+    #32x18
+    wholeMap = []
+    for i in range(18):
+        wholeMap.append([])
+        for j in range(32):
+            wholeMap[i].append(0)
+    print(wholeMap)
+    return wholeMap
+
 WIDTH = 1900
 HEIGHT = 900
 
@@ -13,15 +23,38 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 dataDict = {"obstacles": [], 
             "startBlock": tuple(), 
             "goalBlock": tuple(), 
-            "frontier": [],
-            "explored": []}
+            "wholeGrid": []}
+dataDict["wholeGrid"] = setGrid()
+#0s are empty
+#1s are explored
+#2s are frontier
+#3 is goal
+
 blockDropDown = Dropdown(
     screen, 1625, 25,100,40,name="Block Type",
     choices = ["Wall", "Start", "Goal"],
     values = ["Wall", "Start", "Goal"],direction = "down"
 )
-running = True
 
+algDropDown = Dropdown(
+    screen, 1775, 25,100,40,name="Algorithm",
+    choices = ["BFS", "Alg2", "Alg3"],
+    values = ["BFS", "2", "3"],direction = "down"
+)
+
+running = True
+algorithming = False
+
+def start():
+    algorithming = not algorithming
+
+startButton = Button(screen, 1625, 775, 100, 40, text="Start", fontSize = 15,
+                     inactiveColour=(150,150,150), hoverColour=(120,120,120),
+                     pressedColour=(90,90,9))
+
+def printGrid(grid):
+    for i in range(18):
+        print(grid[i])
 
 def cornered(coordTuple):
     newX, newY = coordTuple
@@ -77,6 +110,8 @@ while running:
         newX, newY = pos
         pygame.draw.rect(screen,(110,115,113),
                          pygame.Rect(newX, newY,51,51))
+    
+    #AS SOON AS START BUTTON IS CLICKED, LOCK STARTBLOCK AND GOAL AND SET THOSE TO 3 AND 4 RESPECTIVELY
 
     pygame_widgets.update(events)
     pygame.display.update()
