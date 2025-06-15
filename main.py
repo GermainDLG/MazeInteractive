@@ -6,6 +6,10 @@ from pygame_widgets.dropdown import Dropdown
 # pygame setup
 pygame.init()
 
+def printGrid(grid):
+    for i in range(18):
+        print(grid[i])
+
 def setGrid():
     #32x18
     wholeMap = []
@@ -13,7 +17,6 @@ def setGrid():
         wholeMap.append([])
         for j in range(32):
             wholeMap[i].append(0)
-    print(wholeMap)
     return wholeMap
 
 WIDTH = 1900
@@ -23,12 +26,14 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 dataDict = {"obstacles": [], 
             "startBlock": tuple(), 
             "goalBlock": tuple(), 
-            "wholeGrid": []}
+            "wholeGrid": [],
+            "active": False}
 dataDict["wholeGrid"] = setGrid()
 #0s are empty
 #1s are explored
 #2s are frontier
 #3 is goal
+#4 are obstacles
 
 blockDropDown = Dropdown(
     screen, 1625, 25,100,40,name="Block Type",
@@ -43,18 +48,19 @@ algDropDown = Dropdown(
 )
 
 running = True
-algorithming = False
 
 def start():
-    algorithming = not algorithming
+    dataDict["active"] = not dataDict["active"]
+    if dataDict["active"] == True:
+        startButton.setText("Stop")
+    else:
+        startButton.setText("Start")
 
 startButton = Button(screen, 1625, 775, 100, 40, text="Start", fontSize = 15,
                      inactiveColour=(150,150,150), hoverColour=(120,120,120),
-                     pressedColour=(90,90,9))
+                     pressedColour=(90,90,9), onClick = start)
 
-def printGrid(grid):
-    for i in range(18):
-        print(grid[i])
+
 
 def cornered(coordTuple):
     newX, newY = coordTuple
@@ -66,10 +72,12 @@ def cornered(coordTuple):
 
 def assignVal(x, y, dropdown):
     if(dropdown == "Wall"):
-        if (x,y) not in dataDict["obstacles"]:
-            dataDict["obstacles"].append((x,y))
+        x = x//50
+        y = y//50
+        if dataDict["wholeGrid"][y][x] != 4:
+            dataDict["wholeGrid"][y][x] = 4
         else:
-            dataDict["obstacles"].remove((x,y))
+            dataDict["wholeGrid"][y][x] = 0
     elif(dropdown == "Start"):
         dataDict["startBlock"] = (x,y)
     elif(dropdown == "Goal"):
@@ -85,7 +93,9 @@ while running:
     for event in events:
         if event.type == pygame.QUIT:
             running = False
-        elif (event.type == pygame.MOUSEBUTTONDOWN) and (mousePos[0] < 1600):
+        elif ((event.type == pygame.MOUSEBUTTONDOWN) and 
+              (mousePos[0] < 1600) and 
+              dataDict["active"] == False):
             actualX, actualY = cornered(mousePos)
             assignVal(actualX, actualY, blockDropDown.getSelected())
 
@@ -106,10 +116,11 @@ while running:
         pygame.draw.rect(screen,(255,0,0),
                          pygame.Rect(dataDict["startBlock"][0],
                                      dataDict["startBlock"][1],51,51))
-    for pos in dataDict["obstacles"]:
-        newX, newY = pos
-        pygame.draw.rect(screen,(110,115,113),
-                         pygame.Rect(newX, newY,51,51))
+    for row in range(18):
+        for col in range(32):
+            if(dataDict["wholeGrid"][row][col] == 4):
+                pygame.draw.rect(screen,(110,115,113),
+                                 pygame.Rect(col*50, row*50,51,51))
     
     #AS SOON AS START BUTTON IS CLICKED, LOCK STARTBLOCK AND GOAL AND SET THOSE TO 3 AND 4 RESPECTIVELY
 
