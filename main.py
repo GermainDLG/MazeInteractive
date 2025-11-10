@@ -3,128 +3,53 @@ import pygame_widgets
 from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
 
-# pygame setup
-pygame.init()
-
-def printGrid(grid):
-    for i in range(18):
-        print(grid[i])
-
-def setGrid():
-    #32x18
-    wholeMap = []
-    for i in range(18):
-        wholeMap.append([])
-        for j in range(32):
-            wholeMap[i].append(0)
-    return wholeMap
-
-WIDTH = 800
+WIDTH = 1200
 HEIGHT = 800
+FPS = 60
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-dataDict = {"obstacles": [], 
-            "startBlock": tuple(), 
-            "goalBlock": tuple(), 
-            "wholeGrid": [],
-            "active": False}
-dataDict["wholeGrid"] = setGrid()
-#0s are empty
-#1s are explored
-#2s are frontier
-#3 is goal
-#4 are obstacles
 
-blockDropDown = Dropdown(
-    screen, 600, 25,100,40,name="Block Type",
-    choices = ["Wall", "Start", "Goal"],
-    values = ["Wall", "Start", "Goal"],direction = "down"
-)
+def pygame_init():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Maze Interactive")
+    return screen
 
-algDropDown = Dropdown(
-    screen, 700, 25,100,40,name="Algorithm",
-    choices = ["BFS", "Alg2", "Alg3"],
-    values = ["BFS", "2", "3"],direction = "down"
-)
 
-running = True
-
-def start():
-    dataDict["active"] = not dataDict["active"]
-    if dataDict["active"] == True:
-        startButton.setText("Stop")
-    else:
-        startButton.setText("Start")
-
-startButton = Button(screen, 1625, 775, 100, 40, text="Start", fontSize = 15,
-                     inactiveColour=(150,150,150), hoverColour=(120,120,120),
-                     pressedColour=(90,90,9), onClick = start)
+def set_grid(screen):
+    for colLine in range(WIDTH//50):
+        pygame.draw.line(screen, (255,255,255), (colLine*50, 0), (colLine*50, HEIGHT))
+    for rowLine in range(HEIGHT//50):
+        pygame.draw.line(screen, (255,255,255), (0, rowLine*50), (WIDTH, rowLine*50))
 
 
 
-def cornered(coordTuple):
-    newX, newY = coordTuple
-    while newX % 50 != 0:
-        newX -= 1
-    while newY % 50 != 0:
-        newY -= 1
-    return newX,newY
+def main():
+    screen = pygame_init()
+    clock = pygame.time.Clock()
+    running = True
 
-def assignVal(x, y, dropdown):
-    if(dropdown == "Wall"):
-        x = x//50
-        y = y//50
-        if dataDict["wholeGrid"][y][x] != 4:
-            dataDict["wholeGrid"][y][x] = 4
-        else:
-            dataDict["wholeGrid"][y][x] = 0
-    elif(dropdown == "Start"):
-        dataDict["startBlock"] = (x,y)
-    elif(dropdown == "Goal"):
-        dataDict["goalBlock"] = (x,y)
+    while running:
+        events = pygame.event.get()
+        mousePos = pygame.mouse.get_pos()
+        for event in events:
+            if event.type == pygame.QUIT:
+                running = False
+
+        #CODE HERE
+
+        screen.fill((0,0,0))
+        set_grid(screen)
+
+        #TO HERE
 
 
+        pygame.display.flip()
+        clock.tick(FPS)
 
-while running:
-    # poll for events
-    # pygame.QUIT event means the user clicked X to close your window
-    events = pygame.event.get()
-    mousePos = pygame.mouse.get_pos()
-    for event in events:
-        if event.type == pygame.QUIT:
-            running = False
-        elif ((event.type == pygame.MOUSEBUTTONDOWN) and 
-              (mousePos[0] < 1600) and 
-              dataDict["active"] == False):
-            actualX, actualY = cornered(mousePos)
-            assignVal(actualX, actualY, blockDropDown.getSelected())
-
-    # fill the screen with a color to wipe away anything from last frame
-    screen.fill("Black")
-
-    # RENDER YOUR GAME HERE
-    for i in range(1,18):
-        pygame.draw.line(screen, (179,179,179),(0,50*i),(WIDTH,50*i),1)
-    for i in range(1,38):
-        pygame.draw.line(screen, (179,179,179),(50*i,0),(50*i,WIDTH),1)
-    pygame.draw.rect(screen,(255,255,255),pygame.Rect(1600, 0, 300, HEIGHT))
-    if(dataDict["goalBlock"]) != tuple():
-        pygame.draw.rect(screen,(0,255,0),
-                         pygame.Rect(dataDict["goalBlock"][0],
-                                     dataDict["goalBlock"][1],51,51))
-    if(dataDict["startBlock"]) != tuple():
-        pygame.draw.rect(screen,(255,0,0),
-                         pygame.Rect(dataDict["startBlock"][0],
-                                     dataDict["startBlock"][1],51,51))
-    for row in range(18):
-        for col in range(32):
-            if(dataDict["wholeGrid"][row][col] == 4):
-                pygame.draw.rect(screen,(110,115,113),
-                                 pygame.Rect(col*50, row*50,51,51))
     
-    #AS SOON AS START BUTTON IS CLICKED, LOCK STARTBLOCK AND GOAL AND SET THOSE TO 3 AND 4 RESPECTIVELY
+    pygame.quit()
 
-    pygame_widgets.update(events)
-    pygame.display.update()
 
-pygame.quit()
+
+if __name__ == "__main__":
+    main()
