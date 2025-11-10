@@ -1,5 +1,5 @@
-import pygame_widgets
 import pygame
+import pygame_widgets
 from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
 
@@ -19,8 +19,8 @@ def setGrid():
             wholeMap[i].append(0)
     return wholeMap
 
-WIDTH = 1900
-HEIGHT = 900
+WIDTH = 800
+HEIGHT = 800
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 dataDict = {"obstacles": [], 
@@ -36,13 +36,13 @@ dataDict["wholeGrid"] = setGrid()
 #4 are obstacles
 
 blockDropDown = Dropdown(
-    screen, 1625, 25,100,40,name="Block Type",
+    screen, 600, 25,100,40,name="Block Type",
     choices = ["Wall", "Start", "Goal"],
     values = ["Wall", "Start", "Goal"],direction = "down"
 )
 
 algDropDown = Dropdown(
-    screen, 1775, 25,100,40,name="Algorithm",
+    screen, 700, 25,100,40,name="Algorithm",
     choices = ["BFS", "Alg2", "Alg3"],
     values = ["BFS", "2", "3"],direction = "down"
 )
