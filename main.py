@@ -8,13 +8,11 @@ HEIGHT = 800
 FOURFIFTHWIDTH = (4*WIDTH)/5
 FPS = 60
 
-
 def pygame_init():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Maze Interactive")
     return screen
-
 
 def set_grid(screen):
     for colLine in range(WIDTH//50):
@@ -23,14 +21,47 @@ def set_grid(screen):
         pygame.draw.line(screen, (255,255,255), (0, rowLine*50), (WIDTH, rowLine*50))
     pygame.draw.rect(screen, (255,255,255), (950, 0, 250, HEIGHT)) #x,y,width,height
 
+def mouseInBounds(mousePos):
+    if(0 <= mousePos[0] and mousePos[0] < 950):
+        if(0 <= mousePos[1] and mousePos[1] < 800): #ONE OFF ERROR FOR LOWEST PIXEL
+            return True
+    return False
 
+def corner(mousePos):
+    newX = mousePos[0]
+    newY = mousePos[1]
+    while newX % 50 != 0:
+        newX -= 1
+    while newY % 50 != 0:
+        newY -= 1
+    return (newX,newY)
 
+def set_blocks(mousePos, events, selected, blockDict):
+    for event in events:
+        if ((event.type == pygame.MOUSEBUTTONDOWN) and 
+            mouseInBounds(mousePos)):
+            selectedBlock = corner(mousePos)
+            print("selected box")
+            #add block to list
+            if(selected == "Obstacle"):
+                blockDict["Obstacle"].append(selectedBlock)
+                print("added obstacle")
+            elif(selected == "Goal"):
+                blockDict["Goal"] = selectedBlock
+                print("set goal")
+            elif(selected == "Start"):
+                blockDict["Start"] = selectedBlock
+                print("set start")
 
 def main():
     screen = pygame_init()
     clock = pygame.time.Clock()
     gameStart = False
     running = True
+    blockDict = dict()
+    blockDict["Start"] = [] #START
+    blockDict["Goal"] = [] #GOAL
+    blockDict["Obstacle"] = [] #OBSTACLE
 
     def start_game():
         nonlocal gameStart
@@ -52,7 +83,7 @@ def main():
                              50,
                              name = "Block Type",
                              choices = ["Start", "Goal", "Obstacle"],
-                             values = [1, 2, 3])
+                             values = ["Start", "Goal", "Obstacle"])
 
     algDropDown = Dropdown(screen,
                              1080,
@@ -61,12 +92,10 @@ def main():
                              name = "Algorithm",
                              choices = ["BFS", "DFS", "TDB"],
                              values = [1, 2, 3])
-    
-
-    
 
 
     while running:
+        #reinitializes the mousepos and event list
         events = pygame.event.get()
         mousePos = pygame.mouse.get_pos()
         for event in events:
@@ -74,11 +103,30 @@ def main():
                 running = False
 
         #CODE HERE
-
+        #set grid
         screen.fill((0,0,0))
         set_grid(screen)
 
+        #handles user adding obstacles, goal and start blocks while we have not
+        #started
+        if(gameStart == False):
+            set_blocks(mousePos, events, blockDropDown.getSelected(), blockDict)
 
+        if(blockDict["Goal"] != []):
+            pygame.draw.rect(screen, (0,255,0), 
+                             (blockDict["Goal"][0], blockDict["Goal"][1],
+                              50, 50))
+        
+        if(blockDict["Start"] != []):
+            pygame.draw.rect(screen, (255,0,0), 
+                             (blockDict["Start"][0], blockDict["Start"][1],
+                              50, 50))
+        
+        if(blockDict["Obstacle"] != []):
+            for i in range(len(blockDict["Obstacle"])):
+                pygame.draw.rect(screen, (220,220,220),
+                                 (blockDict["Obstacle"][i][0],blockDict["Obstacle"][i][1],
+                                  50,50))
         #TO HERE
 
         pygame_widgets.update(events)
