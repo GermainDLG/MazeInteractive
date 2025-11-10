@@ -1,46 +1,42 @@
 import copy
 from main import *
 
-def isInBounds(row, col):
-    if (row < 0) or (row > 17):
-        return False
-    if (col < 0) or (col > 31):
-        return False
+
+def inBounds(x,y):
+    if(0 <= x and x < 950):
+        if(0 <= y and y < 800):
+            return True
+    return False
+
+def isntExplored(blockDict, x,y):
+    for (existingX, existingY) in blockDict["Explored"]:
+        if (existingX, existingY) == (x,y):
+            return False
     return True
 
-def isUndiscovered(row,col):
-    if (dataDict["wholeGrid"][row][col] == 0) or (dataDict["wholeGrid"][row][col] == 3):
+def isntObstacle(blockDict, x,y):
+    for (existingX, existingY) in blockDict["Obstacle"]:
+        if (existingX, existingY) == (x,y):
+            return False
+    return True
+
+def isValid(blockDict, coord):
+    x, y = coord
+    if(inBounds(x,y) and 
+       isntExplored(blockDict, x, y) and 
+       isntObstacle(blockDict, x, y)):
         return True
     return False
 
-def isValid(row, col):
-    if (isInBounds(row,col) and isUndiscovered(row, col)):
-        return True
-    return False
 
 
-def BFSRound():
-    directions = [(1,0),(-1,0),(0,1),(0,-1)]
-    tempGrid = copy.deepcopy(dataDict["wholeGrid"])
-
-
-    for row in range(18): #for each row
-        for col in range(32): # and each value in each row
-            if tempGrid[row][col] == 2: #if the value is on the frontier
-                #check up, add up, check left, add left, etc.
-                for direction in directions:
-                    deltaRow, deltaCol = direction
-                    newRow = row + deltaRow
-                    newCol = col + deltaCol
-                    if(isValid(newRow, newCol)):
-                        #check if goal, otherwise set to 1 and move on
-                        if dataDict["wholeGrid"][newRow][newCol] == 3:
-                            return True
-                        else:
-                            dataDict["wholeGrid"][newRow][newCol] = 2 #set it to the explored
-                            dataDict["wholeGrid"][row][col] = 1
-
-                
-                
-    #essentially just do one round of bfs homeslice, and return a bool gang
-    pass
+def BFSRound(blockDict):
+    directions = [(-50,0), (50,0), (0,-50), (0,50)]
+    for oldCoord in blockDict["Frontier"]:
+        blockDict["Explored"].append(oldCoord)
+    blockDict["Frontier"] = []
+    for (oldX, oldY) in blockDict["Explored"]:
+        for (drow, dcol) in directions:
+            newCoord = (oldX+drow, oldY + dcol)
+            if(isValid(blockDict, newCoord)):
+                blockDict["Frontier"].append(newCoord)

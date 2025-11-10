@@ -2,6 +2,7 @@ import pygame
 import pygame_widgets
 from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
+from BFS import *
 
 WIDTH = 1200
 HEIGHT = 800
@@ -41,17 +42,15 @@ def set_blocks(mousePos, events, selected, blockDict):
         if ((event.type == pygame.MOUSEBUTTONDOWN) and 
             mouseInBounds(mousePos)):
             selectedBlock = corner(mousePos)
-            print("selected box")
+            print({selectedBlock})
             #add block to list
             if(selected == "Obstacle"):
                 blockDict["Obstacle"].append(selectedBlock)
-                print("added obstacle")
             elif(selected == "Goal"):
                 blockDict["Goal"] = selectedBlock
-                print("set goal")
             elif(selected == "Start"):
                 blockDict["Start"] = selectedBlock
-                print("set start")
+                blockDict["Frontier"] = [selectedBlock]
 
 def main():
     screen = pygame_init()
@@ -62,6 +61,8 @@ def main():
     blockDict["Start"] = [] #START
     blockDict["Goal"] = [] #GOAL
     blockDict["Obstacle"] = [] #OBSTACLE
+    blockDict["Explored"] = []
+    blockDict["Frontier"] = []
 
     def start_game():
         nonlocal gameStart
@@ -91,7 +92,7 @@ def main():
                              50,
                              name = "Algorithm",
                              choices = ["BFS", "DFS", "TDB"],
-                             values = [1, 2, 3])
+                             values = ["BFS", "DFS", 3])
 
 
     while running:
@@ -111,6 +112,24 @@ def main():
         #started
         if(gameStart == False):
             set_blocks(mousePos, events, blockDropDown.getSelected(), blockDict)
+        elif(gameStart == True):
+            if(algDropDown.getSelected() == "BFS"):
+                #run bfs
+                BFSRound(blockDict)
+        
+        if(blockDict["Explored"] != []):
+            for i in range(len(blockDict["Explored"])):
+                pygame.draw.rect(screen, (104,255,104),
+                                 (blockDict["Explored"][i][0],blockDict["Explored"][i][1],
+                                  50,50))
+
+        if(blockDict["Frontier"] != []):
+            for i in range(len(blockDict["Frontier"])):
+                print({i})
+                print({blockDict["Frontier"][i]})
+                pygame.draw.rect(screen, (250,255,84),
+                                 (blockDict["Frontier"][i][0],blockDict["Frontier"][i][1],
+                                  50,50))
 
         if(blockDict["Goal"] != []):
             pygame.draw.rect(screen, (0,255,0), 
@@ -132,8 +151,7 @@ def main():
         pygame_widgets.update(events)
         pygame.display.flip()
         clock.tick(FPS)
-
-    
+        
     pygame.quit()
 
 
