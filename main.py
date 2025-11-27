@@ -1,13 +1,15 @@
 import pygame
 import pygame_widgets
+import copy
 from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
+from pygame_widgets.toggle import Toggle
 from BFS import *
 
 WIDTH = 1200
 HEIGHT = 800
 FOURFIFTHWIDTH = (4*WIDTH)/5
-FPS = 60
+FPS = 30
 
 def pygame_init():
     pygame.init()
@@ -37,25 +39,49 @@ def corner(mousePos):
         newY -= 1
     return (newX,newY)
 
-def set_blocks(mousePos, events, selected, blockDict):
+def set_blocks(events, selected, blockDict):
     for event in events:
-        if ((event.type == pygame.MOUSEBUTTONDOWN) and 
-            mouseInBounds(mousePos)):
+        mousePos = pygame.mouse.get_pos()
+        if ((event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION)) and 
+            mouseInBounds(mousePos) and
+            pygame.mouse.get_pressed()[0]):
+            
             selectedBlock = corner(mousePos)
-            print({selectedBlock})
             #add block to list
-            if(selected == "Obstacle"):
+            for block in blockDict["Obstacle"]:
+                if block == selectedBlock:
+                    blockDict["Obstacle"].remove(selectedBlock)
+            if selectedBlock == blockDict["Start"]:
+                blockDict["Start"] = []
+                blockDict["Frontier"] = []
+            if selectedBlock == blockDict["Goal"]:
+                blockDict["Goal"] = []
+
+            if(selected == "Obstacle" and selectedBlock is not blockDict["Goal"]
+               and selectedBlock is not blockDict["Start"]):
                 blockDict["Obstacle"].append(selectedBlock)
-            elif(selected == "Goal"):
+            elif(selected == "Goal" and selectedBlock is not blockDict["Start"]
+                 and selectedBlock not in blockDict["Obstacle"]):
                 blockDict["Goal"] = selectedBlock
-            elif(selected == "Start"):
+            elif(selected == "Start" and selectedBlock is not blockDict["Goal"]
+                 and selectedBlock not in blockDict["Obstacle"]):
                 blockDict["Start"] = selectedBlock
                 blockDict["Frontier"] = [selectedBlock]
+
+        events = pygame.event.get()
+        mousePos = pygame.mouse.get_pos()
+
+def centerize(path):
+    newPath = copy.deepcopy(path)
+    for i in range(len(newPath)):
+        newPath[i] = (newPath[i][0] + 25, newPath[i][1]+25)
+    return newPath
 
 def main():
     screen = pygame_init()
     clock = pygame.time.Clock()
     gameStart = False
+    gameComplete = False
     running = True
     blockDict = dict()
     blockDict["Start"] = [] #START
@@ -63,21 +89,72 @@ def main():
     blockDict["Obstacle"] = [] #OBSTACLE
     blockDict["Explored"] = []
     blockDict["Frontier"] = []
-
+    startText = "Start"
+    path = []
     def start_game():
+        nonlocal gameStart, startButton
+        nonlocal blockDict
+        if(blockDict["Start"] != [] and
+           blockDict["Goal"] != [] and
+           algDropDown.getSelected() is not None):
+            gameStart = not gameStart
+            if gameComplete == True:
+                startButton.setText("Restart")
+                #issue: does not update when someone does not click first
+            elif gameStart == True:
+                startButton.setText("Pause")
+            else:
+                startButton.setText("Start")
+
+    def clear_walls():
+        nonlocal blockDict
+        blockDict["Obstacle"] = []
+        gameComplete = False
+
+    def restart():
+        nonlocal blockDict
         nonlocal gameStart
-        gameStart = True
+        nonlocal gameComplete
+        nonlocal path
+        blockDict["Start"] = [] #START
+        blockDict["Goal"] = [] #GOAL
+        blockDict["Obstacle"] = [] #OBSTACLE
+        blockDict["Explored"] = []
+        blockDict["Frontier"] = []
+        gameStart = False
+        gameComplete = False
+        path = []
+
 
     startButton = Button(screen, 
-                         1000, #excuse the magic numbers
-                         (4*HEIGHT)/5+50, 
-                         150, 50, 
-                         text = "Start", 
+                         970, #excuse the magic numbers
+                         (4*HEIGHT)/5+40, 
+                         100, 50, 
+                         text = startText, 
                          inactiveColour = (179,179,179),
                          pressedColour = (160,160,160), 
                          onClick = start_game
                          )
     
+    clearWallsButton = Button(screen, 
+                         1080, #excuse the magic numbers
+                         (4*HEIGHT)/5+40, 
+                         100, 50, 
+                         text = "Clear Walls", 
+                         inactiveColour = (179,179,179),
+                         pressedColour = (160,160,160), 
+                         onClick = clear_walls
+                         )
+    
+    restartButton = Button(screen,
+                           1025,(4*HEIGHT)/5+100,
+                           100,50,
+                           text = "Restart",
+                           inactiveColour = (179,179,179),
+                            pressedColour = (160,160,160), 
+                            onClick = restart
+                            )
+
     blockDropDown = Dropdown(screen,
                              970,
                              25, 100,
@@ -94,14 +171,12 @@ def main():
                              choices = ["BFS", "DFS", "TDB"],
                              values = ["BFS", "DFS", 3])
 
-
     while running:
         #reinitializes the mousepos and event list
         events = pygame.event.get()
-        mousePos = pygame.mouse.get_pos()
         for event in events:
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
 
         #CODE HERE
         #set grid
@@ -110,8 +185,8 @@ def main():
 
         #handles user adding obstacles, goal and start blocks while we have not
         #started
-        if(gameStart == False):
-            set_blocks(mousePos, events, blockDropDown.getSelected(), blockDict)
+        if(gameStart == False and gameComplete == False):
+            set_blocks(events, blockDropDown.getSelected(), blockDict)
         elif(gameStart == True):
             if(algDropDown.getSelected() == "BFS"):
                 #run bfs
@@ -125,8 +200,6 @@ def main():
 
         if(blockDict["Frontier"] != []):
             for i in range(len(blockDict["Frontier"])):
-                print({i})
-                print({blockDict["Frontier"][i]})
                 pygame.draw.rect(screen, (250,255,84),
                                  (blockDict["Frontier"][i][0],blockDict["Frontier"][i][1],
                                   50,50))
@@ -146,13 +219,26 @@ def main():
                 pygame.draw.rect(screen, (220,220,220),
                                  (blockDict["Obstacle"][i][0],blockDict["Obstacle"][i][1],
                                   50,50))
+
+        if(path != []):
+            path = centerize(path)
+            for i in range(len(path)):
+                if(i+1 != len(path)):
+                    pygame.draw.line(screen, (255,255,0), path[i], path[i+1], 4)        
         #TO HERE
 
         pygame_widgets.update(events)
         pygame.display.flip()
         clock.tick(FPS)
-        
-    pygame.quit()
+
+        for (existingX, existingY) in blockDict["Explored"]:
+            if (existingX, existingY) == blockDict["Goal"]:
+                gameStart = False
+                gameComplete = True
+                startButton.setText("Restart")
+                path = fullBFS(blockDict)
+
+
 
 
 
