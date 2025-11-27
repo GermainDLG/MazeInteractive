@@ -5,6 +5,7 @@ from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
 from pygame_widgets.toggle import Toggle
 from BFS import *
+from AStar import *
 
 WIDTH = 1200
 HEIGHT = 800
