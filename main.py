@@ -23,6 +23,11 @@ path said algorithm took and draw it for the user. The user has access to
 3 buttons: Start/pause, clear walls, and reset. Reset will only be visible when the 
 game has been paused, and will disappear when the game is over. When this happens,
 Start will become reset.
+Features that can be added going forward:
+- stopping the algorithm if I know it is impossible or after a timer threshold
+- more algorithms
+- customizable algorithms (i.e. using euclidean instead of manhattan)
+
 
 
 By: Davis Germain <dgermain@andrew.cmu.edu>
