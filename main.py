@@ -112,11 +112,13 @@ def getPath(blockDict, selectedAlg):
 def main():
     screen = pygame_init()
     clock = pygame.time.Clock()
+    font = pygame.font.SysFont("Arial", 24)
     gameStart = False
     gameComplete = False
     paused = False
     wallsLocked = False
     running = True
+    elapsed_time = 0
 
     blockDict = dict()
     blockDict["Start"] = []
@@ -143,7 +145,7 @@ def main():
            algDropDown.getSelected() is not None):
 
             if gameComplete:
-                restart()
+                resetAlgorithmState()
                 return 
 
             # starting for first time
@@ -175,8 +177,28 @@ def main():
             return
         blockDict["Obstacle"] = []
 
+    def resetAlgorithmState():
+        nonlocal blockDict, heap, gScore, parent, path, gameStart, paused, gameComplete, elapsed_time
+
+        blockDict["Explored"] = []
+        blockDict["Frontier"] = [blockDict["Start"]] if blockDict["Start"] else []
+        heap.clear()
+        heapq.heapify(heap)
+        gScore.clear()
+        parent.clear()
+        path = []
+        elapsed_time = 0
+
+        # Reset flags to allow re-running
+        gameStart = False
+        paused = False
+        gameComplete = False
+        startButton.setText("Start")
+        algDropDown.enable()
+        restartButton.show()
+
     def restart():
-        nonlocal blockDict, gameStart, gameComplete, paused, path, wallsLocked
+        nonlocal blockDict, gameStart, gameComplete, paused, path, wallsLocked, elapsed_time
         blockDict["Start"] = []
         blockDict["Goal"] = []
         blockDict["Obstacle"] = []
@@ -191,6 +213,7 @@ def main():
         paused = False
         wallsLocked = False
         path = []
+        elapsed_time = 0
 
         startButton.setText("Start")
         restartButton.hide()
@@ -290,6 +313,12 @@ def main():
                 else:
                     heap, parent = result
 
+
+        dt = clock.get_time() / 1000  # convert milliseconds to seconds
+        if gameStart:  # only count time while algorithm is running
+            elapsed_time += dt
+
+
         # Drawing code (Explored, Frontier, Start, Goal, Obstacles)
         if blockDict["Explored"]:
             for (x,y) in blockDict["Explored"]:
@@ -307,6 +336,9 @@ def main():
 
         for (x,y) in blockDict["Obstacle"]:
             pygame.draw.rect(screen, (220,220,220),(x,y,50,50))
+        
+        time_text = font.render(f"Time: {elapsed_time:.2f}s", True, (0, 0, 0))
+        screen.blit(time_text, (1020, 250))  # adjust position as needed
 
         # Draw final path
         if path:
