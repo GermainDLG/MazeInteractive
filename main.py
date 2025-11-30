@@ -51,7 +51,7 @@ def set_blocks(events, selected, blockDict):
             selectedBlock = corner(mousePos)
 
             # remove if exists
-            for block in blockDict["Obstacle"]:
+            for block in blockDict["Obstacle"][:]:
                 if block == selectedBlock:
                     blockDict["Obstacle"].remove(selectedBlock)
             if selectedBlock == blockDict["Start"]:
@@ -71,6 +71,7 @@ def set_blocks(events, selected, blockDict):
                  and selectedBlock not in blockDict["Obstacle"]):
                 blockDict["Start"] = selectedBlock
                 blockDict["Frontier"] = [selectedBlock]
+
         events = pygame.event.get()
 
 def centerize(path):
@@ -81,7 +82,7 @@ def centerize(path):
 
 def getPath(blockDict, selectedAlg):
     if(selectedAlg == "A*"):
-        return fullBFS(blockDict)
+        return fullAStar(blockDict)
     elif(selectedAlg == "BFS"):
         return fullBFS(blockDict)
 
@@ -105,6 +106,10 @@ def main():
     path = []
     heap = []
     heapq.heapify(heap)
+
+    # A* state containers (persist across frames)
+    gScore = {}
+    parent = {}
 
     def start_game():
         nonlocal gameStart, paused, gameComplete, wallsLocked
@@ -155,15 +160,17 @@ def main():
         blockDict["Obstacle"] = []
         blockDict["Explored"] = []
         blockDict["Frontier"] = []
-        heap = []
+        heap.clear()
         heapq.heapify(heap)
+        gScore.clear()
+        parent.clear()
         gameStart = False
         gameComplete = False
-        paused = False         # CHANGED
-        wallsLocked = False    # CHANGED
+        paused = False
+        wallsLocked = False
         path = []
 
-        startButton.setText("Start")     # CHANGED
+        startButton.setText("Start")
         restartButton.hide()
         algDropDown.enable()
 
@@ -229,8 +236,15 @@ def main():
             if(algDropDown.getSelected() == "BFS"):
                 BFSRound(blockDict)
             elif(algDropDown.getSelected() == "A*"):
-                print("A*")
-                heap = AStarRound(blockDict, heap)
+                result = AStarRound(blockDict, heap, gScore, parent)
+                # AStarRound returns "GOAL" if it popped the goal node
+                if result == "GOAL":
+                    gameStart = False
+                    paused = False
+                    gameComplete = True
+                    startButton.setText("Restart")
+                    restartButton.hide()
+                    path = getPath(blockDict, algDropDown.getSelected())
 
         # drawing
         if(blockDict["Explored"] != []):
@@ -252,16 +266,17 @@ def main():
         for (x,y) in blockDict["Obstacle"]:
             pygame.draw.rect(screen, (220,220,220),(x,y,50,50))
 
-        if(path != []):
-            path = centerize(path)
-            for i in range(len(path)-1):
-                pygame.draw.line(screen, (255,255,0), path[i], path[i+1], 4)
+        # Draw final path (yellow) if we have one and it's not empty
+        if path:
+            centered = centerize(path)
+            for i in range(len(centered)-1):
+                pygame.draw.line(screen, (255,255,0), centered[i], centered[i+1], 4)
 
         pygame_widgets.update(events)
         pygame.display.flip()
         clock.tick(FPS)
 
-        # check for completion
+        # check for completion (goal in explored)
         for (existingX, existingY) in blockDict["Explored"]:
             if (existingX, existingY) == blockDict["Goal"]:
                 gameStart = False

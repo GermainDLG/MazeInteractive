@@ -1,74 +1,99 @@
-from main import *
 import heapq
 
-def isntExplored(blockDict, x,y):
-    for (existingX, existingY) in blockDict["Explored"]:
-        if (existingX, existingY) == (x,y):
-            return False
-    return True
+GRID_SIZE = 50  # your block size
 
-def isntObstacle(blockDict, x,y):
-    for (existingX, existingY) in blockDict["Obstacle"]:
-        if (existingX, existingY) == (x,y):
-            return False
-    return True
-
-def isntInFrontier(blockDict, x, y):
-    for (existingX, existingY) in blockDict["Frontier"]:
-        if((existingX, existingY) == (x,y)):
-            return False
-    return True
-
-def isValid(blockDict, coord):
-    x, y = coord
-    if(inBounds(x,y) and 
-       isntExplored(blockDict, x, y) and 
-       isntObstacle(blockDict, x, y) and
-       isntInFrontier(blockDict, x, y)):
-        return True
-    return False
-
-def inBounds(x,y):
-    if(0 <= x and x < 950):
-        if(0 <= y and y < 800):
-            return True
-    return False
+def inBounds(x, y):
+    return 0 <= x < 950 and 0 <= y < 800
 
 def h(coord, blockDict):
-    coordX, coordY = coord
-    return abs(coordX - blockDict["Goal"][0]) + abs(coordY - blockDict["Goal"][1])
+    """Manhattan distance in grid units (admissible for 4-way movement)"""
+    gx, gy = blockDict["Goal"]
+    x, y = coord
+    return (abs(x - gx) // GRID_SIZE) + (abs(y - gy) // GRID_SIZE)
 
-def g(coord, blockDict):
-    coordX, coordY = coord
-    return abs(coordX - blockDict["Start"][0]) + abs(coordY - blockDict["Start"][1])
+def AStarRound(blockDict, heap, gScore, parent):
+    directions = [(-GRID_SIZE,0), (GRID_SIZE,0), (0,-GRID_SIZE), (0,GRID_SIZE)]
+    
+    if not heap:
+        start = tuple(blockDict["Start"])
+        gScore[start] = 0
+        heapq.heappush(heap, (h(start, blockDict), start))
+        if start not in blockDict["Frontier"]:
+            blockDict["Frontier"].append(start)
+        return heap, gScore, parent
 
-def f(coord, blockDict):
-    return h(coord, blockDict) #g(coord, blockDict) + 
+    f_val, current = heapq.heappop(heap)
 
-def AStarRound(blockDict, heap):
-    visited = set(blockDict["Explored"])
-    directions = [(-50,0), (50,0), (0,-50), (0,50)]
-    if(heap == []):
-        heapq.heappush(heap, (f(blockDict["Start"], blockDict), blockDict["Start"]))
-    #here
-    exploreHere = (heapq.heappop(heap))[1]
-    blockDict["Frontier"].remove(exploreHere)
-    blockDict["Explored"].append(exploreHere)
-    r,c = exploreHere
-    for dr, dc in directions:
-            newPos = (r + dr, c + dc)
-            if(newPos not in visited): 
-                if(isValid(blockDict, newPos)):
-                    heapq.heappush(heap, (f(newPos, blockDict), newPos))
-                    if(inBounds(newPos[0], newPos[1])):
-                        blockDict["Frontier"].append(newPos)
-    return heap
+    if current in blockDict["Frontier"]:
+        try:
+            blockDict["Frontier"].remove(current)
+        except ValueError:
+            pass
+
+    if current not in blockDict["Explored"]:
+        blockDict["Explored"].append(current)
+
+    if current == tuple(blockDict["Goal"]):
+        return "GOAL"
+
+    cx, cy = current
+    for dx, dy in directions:
+        nx, ny = cx + dx, cy + dy
+        neighbor = (nx, ny)
+
+        if not inBounds(nx, ny) or neighbor in blockDict["Obstacle"]:
+            continue
+
+        tentative_g = gScore[current] + 1  # one step per grid
+
+        if tentative_g < gScore.get(neighbor, float('inf')):
+            parent[neighbor] = current
+            gScore[neighbor] = tentative_g
+            fscore = tentative_g + h(neighbor, blockDict)
+            heapq.heappush(heap, (fscore, neighbor))
+
+            if neighbor not in blockDict["Frontier"]:
+                blockDict["Frontier"].append(neighbor)
+
+    return heap, gScore, parent
+
+def reconstruct_path(parent, end):
+    path = [end]
+    while end in parent:
+        end = parent[end]
+        path.append(end)
+    path.reverse()
+    return path
 
 def fullAStar(blockDict):
-    heap = []
-    heapq.heapify(heap)
-    directions = [(-50,0), (50,0), (0,-50), (0,50)]
-    heapq.heappush(heap, (f(blockDict["Start"], blockDict), blockDict["Start"]))
-    visited = set()
+    start = tuple(blockDict["Start"])
+    goal = tuple(blockDict["Goal"])
+    directions = [(-GRID_SIZE,0), (GRID_SIZE,0), (0,-GRID_SIZE), (0,GRID_SIZE)]
 
-    return
+    heap = []
+    gScore = {start: 0}
+    parent = {}
+    heapq.heappush(heap, (h(start, blockDict), start))
+
+    while heap:
+        f_val, current = heapq.heappop(heap)
+
+        if current == goal:
+            return reconstruct_path(parent, goal)
+
+        cx, cy = current
+        for dx, dy in directions:
+            nx, ny = cx + dx, cy + dy
+            neighbor = (nx, ny)
+
+            if not inBounds(nx, ny) or neighbor in blockDict["Obstacle"]:
+                continue
+
+            tentative_g = gScore[current] + 1
+
+            if tentative_g < gScore.get(neighbor, float('inf')):
+                parent[neighbor] = current
+                gScore[neighbor] = tentative_g
+                heapq.heappush(heap, (tentative_g + h(neighbor, blockDict), neighbor))
+
+    return None
