@@ -1,6 +1,7 @@
 import pygame
 import pygame_widgets
 import copy
+import heapq
 from pygame_widgets.button import Button
 from pygame_widgets.dropdown import Dropdown
 from pygame_widgets.toggle import Toggle
@@ -70,7 +71,6 @@ def set_blocks(events, selected, blockDict):
                  and selectedBlock not in blockDict["Obstacle"]):
                 blockDict["Start"] = selectedBlock
                 blockDict["Frontier"] = [selectedBlock]
-
         events = pygame.event.get()
 
 def centerize(path):
@@ -78,6 +78,12 @@ def centerize(path):
     for i in range(len(newPath)):
         newPath[i] = (newPath[i][0] + 25, newPath[i][1]+25)
     return newPath
+
+def getPath(blockDict, selectedAlg):
+    if(selectedAlg == "A*"):
+        return fullBFS(blockDict)
+    elif(selectedAlg == "BFS"):
+        return fullBFS(blockDict)
 
 def main():
     screen = pygame_init()
@@ -97,6 +103,8 @@ def main():
 
     startText = "Start"
     path = []
+    heap = []
+    heapq.heapify(heap)
 
     def start_game():
         nonlocal gameStart, paused, gameComplete, wallsLocked
@@ -147,6 +155,8 @@ def main():
         blockDict["Obstacle"] = []
         blockDict["Explored"] = []
         blockDict["Frontier"] = []
+        heap = []
+        heapq.heapify(heap)
         gameStart = False
         gameComplete = False
         paused = False         # CHANGED
@@ -200,8 +210,8 @@ def main():
                              25, 100,
                              50,
                              name = "Algorithm",
-                             choices = ["BFS", "DFS", "TDB"],
-                             values = ["BFS", "DFS", 3])
+                             choices = ["BFS", "A*", "TDB"],
+                             values = ["BFS", "A*", 3])
 
     while running:
         events = pygame.event.get()
@@ -218,6 +228,9 @@ def main():
         elif(gameStart and not paused):
             if(algDropDown.getSelected() == "BFS"):
                 BFSRound(blockDict)
+            elif(algDropDown.getSelected() == "A*"):
+                print("A*")
+                heap = AStarRound(blockDict, heap)
 
         # drawing
         if(blockDict["Explored"] != []):
@@ -256,7 +269,7 @@ def main():
                 gameComplete = True
                 startButton.setText("Restart")
                 restartButton.hide()
-                path = fullBFS(blockDict)
+                path = getPath(blockDict, algDropDown.getSelected())
     
     pygame.quit()
 
