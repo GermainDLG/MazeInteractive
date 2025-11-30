@@ -1,23 +1,30 @@
 import heapq
 
+"""" 
+This is my implementation of Greedy search. Two main functions make up this file:
+greedyRound and fullGreedy
+greedyRound starts by taking in the heap (initializing if it does not exist yet),
+and then adds the current block to explored. If it is the goal, return "GOAL".
+Otherwise, for each direction, we get its weight and add it to the priority queue.
+The weights assigned go by the absolute distance from the goal node.
+
+fullGreedy does the exact same thing, except it holds a while loop over the heap.
+While the heap is not empty, we keep searching with the same process defined above.
+We return None if we cannot find a path (i.e. the pq is empty)
+
+By: Davis Germain <dgermain@andrew.cmu.edu>
+"""
+
 def inBounds(x, y):
     return 0 <= x < 950 and 0 <= y < 800
 
 def h(coord, blockDict):
-    """Manhattan distance heuristic for greedy search (admissible for 4-way grid)"""
     gx, gy = blockDict["Goal"]
     x, y = coord
     return abs(x - gx) + abs(y - gy)
 
-def GreedyRound(blockDict, heap, parent):
-    """
-    One step of Greedy Best-First Search animation.
-    Returns:
-        - "GOAL" if the goal is reached
-        - Otherwise, updated heap and parent
-    """
+def greedyRound(blockDict, heap, parent):
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
-
     # initialize
     if not heap:
         start = tuple(blockDict["Start"])
@@ -26,7 +33,7 @@ def GreedyRound(blockDict, heap, parent):
             blockDict["Frontier"].append(start)
         return heap, parent
 
-    f_val, current = heapq.heappop(heap)
+    current = (heapq.heappop(heap))[1]
 
     if current in blockDict["Frontier"]:
         try:
@@ -57,7 +64,6 @@ def GreedyRound(blockDict, heap, parent):
     return heap, parent
 
 def reconstruct_path(parent, start, end):
-    """Reconstruct path from parent mapping."""
     path = [end]
     current = end
     while current != start:
@@ -69,7 +75,6 @@ def reconstruct_path(parent, start, end):
     return path
 
 def fullGreedy(blockDict):
-    """Compute full greedy path from start to goal."""
     start = tuple(blockDict["Start"])
     goal = tuple(blockDict["Goal"])
     heap = []
@@ -80,7 +85,7 @@ def fullGreedy(blockDict):
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
 
     while heap:
-        f_val, current = heapq.heappop(heap)
+        current = heapq.heappop(heap)[1]
         explored.add(current)
 
         if current == goal:

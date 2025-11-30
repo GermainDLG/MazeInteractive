@@ -1,12 +1,26 @@
 import heapq
 
-GRID_SIZE = 50  # your block size
+
+"""" 
+This is my implementation of A*. It works very similarly to greedy. It creates
+a priority queue starting with the start node, and appends each surrounding block
+in the 4 directions to the priority queue. It then checks if any of these are
+the goal node, and if they are not, it either returns having completed its 
+iteration (AStarRound), or it loops again until the heap is empty (fullAStar).
+The heuristic here is also absolute distance from the goal node, except we also
+store a "gscore" for each node, which is the number of steps taken to get there
+from the start node.
+
+
+By: Davis Germain <dgermain@andrew.cmu.edu>
+"""
+
+GRID_SIZE = 50  #block size
 
 def inBounds(x, y):
     return 0 <= x < 950 and 0 <= y < 800
 
 def h(coord, blockDict):
-    """Manhattan distance in grid units (admissible for 4-way movement)"""
     gx, gy = blockDict["Goal"]
     x, y = coord
     return (abs(x - gx) // GRID_SIZE) + (abs(y - gy) // GRID_SIZE)
@@ -22,7 +36,7 @@ def AStarRound(blockDict, heap, gScore, parent):
             blockDict["Frontier"].append(start)
         return heap, gScore, parent
 
-    f_val, current = heapq.heappop(heap)
+    current = (heapq.heappop(heap))[1]
 
     if current in blockDict["Frontier"]:
         try:
@@ -76,7 +90,7 @@ def fullAStar(blockDict):
     heapq.heappush(heap, (h(start, blockDict), start))
 
     while heap:
-        f_val, current = heapq.heappop(heap)
+        current = (heapq.heappop(heap))[1]
 
         if current == goal:
             return reconstruct_path(parent, goal)

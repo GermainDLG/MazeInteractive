@@ -9,10 +9,30 @@ from BFS import *
 from AStar import *
 from Greedy import *
 
+"""" 
+This is the main file of this interactive. It works by utilizing pygame's
+while running structure for the body so the game will always be running. We start
+by intiliazing all the variables we use, such as the heap, the dropdown, the buttons,
+and everything else we use. We then have an if statement (which runs continuously
+because of the while running) which cases on whether the user has started the
+experience. If not, we are free to take and place the start, end, and obstacle
+blocks. We are also ready to accept input from the algorithm dropdown. If the
+experience has started, then we want to pause all user input and run the desired
+pathfinding algorithm. Once it is done running, the application will return the
+path said algorithm took and draw it for the user. The user has access to
+3 buttons: Start/pause, clear walls, and reset. Reset will only be visible when the 
+game has been paused, and will disappear when the game is over. When this happens,
+Start will become reset.
+
+
+By: Davis Germain <dgermain@andrew.cmu.edu>
+"""
+
+
 WIDTH = 1200
 HEIGHT = 800
 FOURFIFTHWIDTH = (4*WIDTH)/5
-FPS = 30
+FPS = 60
 
 def pygame_init():
     pygame.init()
@@ -110,7 +130,6 @@ def main():
     heap = []
     heapq.heapify(heap)
 
-    # A* state containers (persist across frames)
     gScore = {}
     parent = {}
 
@@ -137,14 +156,14 @@ def main():
                 return
 
             # pausing
-            if gameStart and not paused:          # CHANGED: pause
+            if gameStart and not paused:
                 paused = True
                 gameStart = False
-                startButton.setText("Resume")     # CHANGED
+                startButton.setText("Resume")
                 return
 
             # resuming
-            if paused:                             # CHANGED: resume
+            if paused:
                 paused = False
                 gameStart = True
                 startButton.setText("Pause") 
@@ -260,7 +279,7 @@ def main():
                 else:
                     heap, gScore, parent = result
             elif alg == "Greedy":
-                result = GreedyRound(blockDict, heap, parent)
+                result = greedyRound(blockDict, heap, parent)
                 if result == "GOAL":
                     gameStart = False
                     paused = False

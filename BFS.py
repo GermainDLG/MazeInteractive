@@ -1,6 +1,20 @@
 import copy
 from collections import deque
 
+"""" 
+This is my implementation of BFS for my pathfinding interactive. It works with
+BFSRound, which will run one iteration of BFS, and fullBFS, which will run the
+whole search algorithm. BFSRound will take every node in the frontier, set it
+to explored in blockDict, and then check all 4 directions (up, down, left, right),
+and add those positions to the frontier if they are valid (i.e. in bounds, have
+not been explored, are not an obstacle, and are not already in the frontier.)
+There is also FullBFS which completes the same action, however it has a while
+loop over the frontier to check if it is empty. While it is not empty and we
+have not found the goal, we keep expanding outwards.
+
+By: Davis Germain <dgermain@andrew.cmu.edu>
+"""
+
 def inBounds(x,y):
     return 0 <= x < 950 and 0 <= y < 800
 
@@ -19,12 +33,6 @@ def isValid(blockDict, coord):
             and isntObstacle(blockDict, x,y) and isntInFrontier(blockDict, x,y))
 
 def BFSRound(blockDict, parent=None):
-    """
-    One step of BFS animation.
-    Returns:
-        - 'GOAL' if goal reached
-        - Otherwise, updated frontier and parent dictionary
-    """
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
     tmpFrontier = copy.deepcopy(blockDict["Frontier"])
     blockDict["Frontier"] = []
@@ -46,7 +54,6 @@ def BFSRound(blockDict, parent=None):
     return blockDict["Frontier"] if blockDict["Frontier"] else None
 
 def reconstruct_path(parent, start, goal):
-    """Reconstruct BFS path from parent mapping."""
     path = [goal]
     current = goal
     while current != start:
@@ -58,7 +65,6 @@ def reconstruct_path(parent, start, goal):
     return path
 
 def fullBFS(blockDict):
-    """Run full BFS to get complete path from start to goal."""
     start = tuple(blockDict["Start"])
     goal = tuple(blockDict["Goal"])
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
