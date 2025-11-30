@@ -1,92 +1,66 @@
 import copy
-from main import *
 from collections import deque
 
-
 def inBounds(x,y):
-    if(0 <= x and x < 950):
-        if(0 <= y and y < 800):
-            return True
-    return False
+    return 0 <= x < 950 and 0 <= y < 800
 
 def isntExplored(blockDict, x,y):
-    for (existingX, existingY) in blockDict["Explored"]:
-        if (existingX, existingY) == (x,y):
-            return False
-    return True
+    return (x,y) not in blockDict["Explored"]
 
 def isntObstacle(blockDict, x,y):
-    for (existingX, existingY) in blockDict["Obstacle"]:
-        if (existingX, existingY) == (x,y):
-            return False
-    return True
+    return (x,y) not in blockDict["Obstacle"]
 
 def isntInFrontier(blockDict, x, y):
-    for (existingX, existingY) in blockDict["Frontier"]:
-        if((existingX, existingY) == (x,y)):
-            return False
-    return True
+    return (x,y) not in blockDict["Frontier"]
 
 def isValid(blockDict, coord):
     x, y = coord
-    if(inBounds(x,y) and 
-       isntExplored(blockDict, x, y) and 
-       isntObstacle(blockDict, x, y) and
-       isntInFrontier(blockDict, x, y)):
-        return True
-    return False
+    return (inBounds(x,y) and isntExplored(blockDict, x,y) 
+            and isntObstacle(blockDict, x,y) and isntInFrontier(blockDict, x,y))
 
-def notInPath(coord, path):
-    for pair in path:
-        if pair == coord:
-            return False
-    return True
-
-def isSemiValid(blockDict, coord, path):
-    x, y = coord
-    if(inBounds(x,y) and 
-       isntObstacle(blockDict, x, y) and
-       notInPath(coord, path)):
-        return True
-    return False
-
-
-
-def BFSRound(blockDict):
+def BFSRound(blockDict, parent=None):
+    """
+    One step of BFS animation.
+    Returns:
+        - 'GOAL' if goal reached
+        - Otherwise, updated frontier and parent dictionary
+    """
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
     tmpFrontier = copy.deepcopy(blockDict["Frontier"])
-    for oldCoord in blockDict["Frontier"]:
-        blockDict["Explored"].append(oldCoord)
     blockDict["Frontier"] = []
-    for (oldX, oldY) in tmpFrontier:
-        for (drow, dcol) in directions:
-            newCoord = (oldX+drow, oldY + dcol)
-            if(isValid(blockDict, newCoord)):
+
+    for oldCoord in tmpFrontier:
+        blockDict["Explored"].append(oldCoord)
+
+        # Check if we reached the goal
+        if oldCoord == tuple(blockDict["Goal"]):
+            return "GOAL"
+
+        for dr, dc in directions:
+            newCoord = (oldCoord[0]+dr, oldCoord[1]+dc)
+            if isValid(blockDict, newCoord):
                 blockDict["Frontier"].append(newCoord)
+                if parent is not None:
+                    parent[newCoord] = oldCoord  # track BFS path
 
-#def fullBFS(blockDict):
-    # wrapper that starts with just current position
-#    startingPath = []
-#    startingPath.append(blockDict["Start"])
-#    return BFSWrapper(blockDict, startingPath)
+    return blockDict["Frontier"] if blockDict["Frontier"] else None
 
-
-def BFSWrapper(blockDict, path):
-    if(path[-1] == blockDict["Goal"]):
-        return path
-    else:
-        directions = [(-50,0), (50,0), (0,-50), (0,50)]
-        mostRecent = path[-1]
-        for (drow, dcol) in directions:
-            newPos = (mostRecent[0] + drow, mostRecent[1] + dcol)
-            if(isSemiValid(blockDict, newPos, path)):
-                newPath = copy.deepcopy(path)
-                newPath.append(newPos)
-                return BFSWrapper(blockDict, newPath)
+def reconstruct_path(parent, start, goal):
+    """Reconstruct BFS path from parent mapping."""
+    path = [goal]
+    current = goal
+    while current != start:
+        current = parent.get(current)
+        if current is None:
+            return None  # no path found
+        path.append(current)
+    path.reverse()
+    return path
 
 def fullBFS(blockDict):
-    start = blockDict["Start"]
-    goal = blockDict["Goal"]
+    """Run full BFS to get complete path from start to goal."""
+    start = tuple(blockDict["Start"])
+    goal = tuple(blockDict["Goal"])
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
 
     queue = deque()
@@ -102,7 +76,7 @@ def fullBFS(blockDict):
 
         for dr, dc in directions:
             newPos = (r + dr, c + dc)
-            if isSemiValid(blockDict, newPos, path) and newPos not in visited:
+            if (inBounds(*newPos) and newPos not in visited and newPos not in blockDict["Obstacle"]):
                 visited.add(newPos)
                 newPath = path + [newPos]
                 queue.append(newPath)

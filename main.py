@@ -7,6 +7,7 @@ from pygame_widgets.dropdown import Dropdown
 from pygame_widgets.toggle import Toggle
 from BFS import *
 from AStar import *
+from Greedy import *
 
 WIDTH = 1200
 HEIGHT = 800
@@ -85,6 +86,8 @@ def getPath(blockDict, selectedAlg):
         return fullAStar(blockDict)
     elif(selectedAlg == "BFS"):
         return fullBFS(blockDict)
+    elif(selectedAlg == "Greedy"):
+        return fullGreedy(blockDict)
 
 def main():
     screen = pygame_init()
@@ -217,8 +220,8 @@ def main():
                              25, 100,
                              50,
                              name = "Algorithm",
-                             choices = ["BFS", "A*", "TDB"],
-                             values = ["BFS", "A*", 3])
+                             choices = ["BFS", "A*", "Greedy"],
+                             values = ["BFS", "A*", "Greedy"])
 
     while running:
         events = pygame.event.get()
@@ -229,44 +232,64 @@ def main():
         screen.fill((0,0,0))
         set_grid(screen)
 
-        # placement only if not started, not paused, not complete
-        if(not gameStart and not paused and not gameComplete):
+        # Placement of blocks only if not running
+        if not gameStart and not paused and not gameComplete:
             set_blocks(events, blockDropDown.getSelected(), blockDict)
-        elif(gameStart and not paused):
-            if(algDropDown.getSelected() == "BFS"):
-                BFSRound(blockDict)
-            elif(algDropDown.getSelected() == "A*"):
-                result = AStarRound(blockDict, heap, gScore, parent)
-                # AStarRound returns "GOAL" if it popped the goal node
+
+        # Animation step
+        elif gameStart and not paused:
+            alg = algDropDown.getSelected()
+            if alg == "BFS":
+                result = BFSRound(blockDict, parent)
                 if result == "GOAL":
                     gameStart = False
                     paused = False
                     gameComplete = True
                     startButton.setText("Restart")
                     restartButton.hide()
-                    path = getPath(blockDict, algDropDown.getSelected())
+                    path = reconstruct_path(parent, tuple(blockDict["Start"]), tuple(blockDict["Goal"]))
+            elif alg == "A*":
+                result = AStarRound(blockDict, heap, gScore, parent)
+                if result == "GOAL":
+                    gameStart = False
+                    paused = False
+                    gameComplete = True
+                    startButton.setText("Restart")
+                    restartButton.hide()
+                    path = reconstruct_path(parent, tuple(blockDict["Start"]), tuple(blockDict["Goal"]))
+                else:
+                    heap, gScore, parent = result
+            elif alg == "Greedy":
+                result = GreedyRound(blockDict, heap, parent)
+                if result == "GOAL":
+                    gameStart = False
+                    paused = False
+                    gameComplete = True
+                    startButton.setText("Restart")
+                    restartButton.hide()
+                    path = reconstruct_path(parent, tuple(blockDict["Start"]), tuple(blockDict["Goal"]))
+                else:
+                    heap, parent = result
 
-        # drawing
-        if(blockDict["Explored"] != []):
+        # Drawing code (Explored, Frontier, Start, Goal, Obstacles)
+        if blockDict["Explored"]:
             for (x,y) in blockDict["Explored"]:
                 pygame.draw.rect(screen, (104,255,104),(x,y,50,50))
 
-        if(blockDict["Frontier"] != []):
+        if blockDict["Frontier"]:
             for (x,y) in blockDict["Frontier"]:
                 pygame.draw.rect(screen, (250,255,84),(x,y,50,50))
 
-        if(blockDict["Goal"] != []):
-            pygame.draw.rect(screen, (0,255,0),
-                             (blockDict["Goal"][0], blockDict["Goal"][1],50,50))
-        
-        if(blockDict["Start"] != []):
-            pygame.draw.rect(screen, (255,0,0),
-                             (blockDict["Start"][0], blockDict["Start"][1],50,50))
-        
+        if blockDict["Goal"]:
+            pygame.draw.rect(screen, (0,255,0),(blockDict["Goal"][0], blockDict["Goal"][1],50,50))
+
+        if blockDict["Start"]:
+            pygame.draw.rect(screen, (255,0,0),(blockDict["Start"][0], blockDict["Start"][1],50,50))
+
         for (x,y) in blockDict["Obstacle"]:
             pygame.draw.rect(screen, (220,220,220),(x,y,50,50))
 
-        # Draw final path (yellow) if we have one and it's not empty
+        # Draw final path
         if path:
             centered = centerize(path)
             for i in range(len(centered)-1):
@@ -275,18 +298,6 @@ def main():
         pygame_widgets.update(events)
         pygame.display.flip()
         clock.tick(FPS)
-
-        # check for completion (goal in explored)
-        for (existingX, existingY) in blockDict["Explored"]:
-            if (existingX, existingY) == blockDict["Goal"]:
-                gameStart = False
-                paused = False
-                gameComplete = True
-                startButton.setText("Restart")
-                restartButton.hide()
-                path = getPath(blockDict, algDropDown.getSelected())
-    
-    pygame.quit()
 
 
 if __name__ == "__main__":
