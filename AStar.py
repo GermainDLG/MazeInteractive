@@ -17,14 +17,30 @@ By: Davis Germain <dgermain@andrew.cmu.edu>
 
 GRID_SIZE = 50  #block size
 
-def inBounds(x, y):
+"""
+in_bounds returns whether the x,y passed in are within the interactable maze
+area.
+"""
+def in_bounds(x, y):
     return 0 <= x < 950 and 0 <= y < 800
 
+"""
+h is the heuristic function which returns the absolute difference between the coord
+passed in and the goal divided by the size of each block (50x50).
+"""
 def h(coord, blockDict):
     gx, gy = blockDict["Goal"]
     x, y = coord
     return (abs(x - gx) // GRID_SIZE) + (abs(y - gy) // GRID_SIZE)
 
+"""
+AStarRound takes in the blockDict, heap, gScore, and parent. the gScore is a new
+dictionary that holds the distance from start each block is. The algorithm 
+intializes the heap if it isn't already, pops the highest priority element, 
+removes it from the frontier and adds it to the explored list, and then calculates
+the gScore of each of its neighbors by adding one to its current gScore and adds
+it to the priority queue.
+"""
 def AStarRound(blockDict, heap, gScore, parent):
     directions = [(-GRID_SIZE,0), (GRID_SIZE,0), (0,-GRID_SIZE), (0,GRID_SIZE)]
     
@@ -55,7 +71,7 @@ def AStarRound(blockDict, heap, gScore, parent):
         nx, ny = cx + dx, cy + dy
         neighbor = (nx, ny)
 
-        if not inBounds(nx, ny) or neighbor in blockDict["Obstacle"]:
+        if not in_bounds(nx, ny) or neighbor in blockDict["Obstacle"]:
             continue
 
         tentative_g = gScore[current] + 1  # one step per grid
@@ -71,6 +87,13 @@ def AStarRound(blockDict, heap, gScore, parent):
 
     return heap, gScore, parent
 
+"""
+reconstruct_path takes the parent path and the end goal. It traces
+down the path taken by the algorithm through parent. Once it has reconstructed
+the path, it returns it.
+Note: This function appears in Greedy.py exactly the same and AStar.py differently.
+This was done for clarity to understand which reconstruction was happening.
+"""
 def reconstruct_path(parent, end):
     path = [end]
     while end in parent:
@@ -79,6 +102,11 @@ def reconstruct_path(parent, end):
     path.reverse()
     return path
 
+"""
+fullAStar follows the same algorithm outlined in AStarRound. Instead of performing
+a single loop though, it continuously loops while the heap is not NULL until its
+found a valid path or returns None.
+"""
 def fullAStar(blockDict):
     start = tuple(blockDict["Start"])
     goal = tuple(blockDict["Goal"])
@@ -100,7 +128,7 @@ def fullAStar(blockDict):
             nx, ny = cx + dx, cy + dy
             neighbor = (nx, ny)
 
-            if not inBounds(nx, ny) or neighbor in blockDict["Obstacle"]:
+            if not in_bounds(nx, ny) or neighbor in blockDict["Obstacle"]:
                 continue
 
             tentative_g = gScore[current] + 1

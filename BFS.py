@@ -15,23 +15,33 @@ have not found the goal, we keep expanding outwards.
 By: Davis Germain <dgermain@andrew.cmu.edu>
 """
 
-def inBounds(x,y):
+"""
+in_bounds, isnt_explored, isnt_obstacle, isnt_in_frontier, and is_valid are all
+functions used to check if a given block is a valid block to put on the frontier.
+They return boolean values after their function names.
+"""
+def in_bounds(x,y):
     return 0 <= x < 950 and 0 <= y < 800
 
-def isntExplored(blockDict, x,y):
+def isnt_explored(blockDict, x,y):
     return (x,y) not in blockDict["Explored"]
 
-def isntObstacle(blockDict, x,y):
+def isnt_obstacle(blockDict, x,y):
     return (x,y) not in blockDict["Obstacle"]
 
-def isntInFrontier(blockDict, x, y):
+def isnt_in_frontier(blockDict, x, y):
     return (x,y) not in blockDict["Frontier"]
 
-def isValid(blockDict, coord):
+def is_valid(blockDict, coord):
     x, y = coord
-    return (inBounds(x,y) and isntExplored(blockDict, x,y) 
-            and isntObstacle(blockDict, x,y) and isntInFrontier(blockDict, x,y))
+    return (in_bounds(x,y) and isnt_explored(blockDict, x,y) 
+            and isnt_obstacle(blockDict, x,y) and isnt_in_frontier(blockDict, x,y))
 
+"""
+BFSRound takes in the blockDict and parent path if applicable. It runs a
+single "round" of BFS, incrementing the frontier forward by one space and 
+adding to the parent path. It either returns GOAL or None.
+"""
 def BFSRound(blockDict, parent=None):
     directions = [(-50,0), (50,0), (0,-50), (0,50)]
     tmpFrontier = copy.deepcopy(blockDict["Frontier"])
@@ -46,13 +56,20 @@ def BFSRound(blockDict, parent=None):
 
         for dr, dc in directions:
             newCoord = (oldCoord[0]+dr, oldCoord[1]+dc)
-            if isValid(blockDict, newCoord):
+            if is_valid(blockDict, newCoord):
                 blockDict["Frontier"].append(newCoord)
                 if parent is not None:
                     parent[newCoord] = oldCoord  # track BFS path
 
-    return blockDict["Frontier"] if blockDict["Frontier"] else None
+    return None
 
+"""
+reconstruct_path takes the parent path, the start, and the goal, and traces
+down the path taken by the algorithm through parent. Once it has reconstructed
+the path, it returns it.
+Note: This function appears in Greedy.py exactly the same and AStar.py differently.
+This was done for clarity to understand which reconstruction was happening.
+"""
 def reconstruct_path(parent, start, goal):
     path = [goal]
     current = goal
@@ -64,6 +81,13 @@ def reconstruct_path(parent, start, goal):
     path.reverse()
     return path
 
+"""
+fullBFS repeatedly runs the BFS algorithm and adds each iteration to a queue. 
+While this queue is not empty, we still have more to explore and we perform 
+another round of BFS. Note: this function does not call BFSRound. It follows
+its own queue-based structure. It either returns the path the the goal from
+start or None.
+"""
 def fullBFS(blockDict):
     start = tuple(blockDict["Start"])
     goal = tuple(blockDict["Goal"])
@@ -82,7 +106,7 @@ def fullBFS(blockDict):
 
         for dr, dc in directions:
             newPos = (r + dr, c + dc)
-            if (inBounds(*newPos) and newPos not in visited and newPos not in blockDict["Obstacle"]):
+            if (in_bounds(*newPos) and newPos not in visited and newPos not in blockDict["Obstacle"]):
                 visited.add(newPos)
                 newPath = path + [newPos]
                 queue.append(newPath)
